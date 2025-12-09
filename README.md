@@ -21,7 +21,7 @@ Clone the repository and install the necessary dependencies:
 
 ```bash
 # Clone the repository
-git clone https://github.com/YourUsername/your-repo-name.git
+git clone https://github.com/SkillnTell/EUNOIA_jury_part.git
 cd eunoia-jury-portal
 
 # Install NPM dependencies
