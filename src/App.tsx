@@ -1,11 +1,11 @@
 import React from "react";
 import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import Layout from "../layout/Layout";
-import Login from "../pages/Login";
-import Dashboard from "../pages/Dashboard";
-import Evaluation from "../pages/Evaluation";
+import Layout from "./layout/Layout";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Evaluation from "./pages/Evaluation";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import AdminDashboard from "../pages/AdminDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 const LoadingScreen = () => (
   <div className="min-h-screen flex items-center justify-center bg-[#430870] text-white">Loading...</div>
 );

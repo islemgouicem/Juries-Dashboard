@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { useAuth } from "../src/context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 
 const JudgeIcon: React.FC = () => (
   <div className="w-16 h-16 rounded-full bg-[#6B5B7B]/60 flex items-center justify-center">
@@ -42,7 +42,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4">
+    <div className="flex flex-col min-h-screen items-center justify-center p-4">
       <div className="text-center mb-8">
         <div className="inline-block relative mb-4">
           <img src="/LOGO.png" alt="Eunoia" className="h-16 w-auto mx-auto" />

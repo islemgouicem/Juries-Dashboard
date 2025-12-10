@@ -4,9 +4,9 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card, CardContent } from "../components/ui/card";
 import { Search, LogOut, Settings, CheckCircle2 } from "lucide-react";
-import { Project, DbEvaluation } from "../types";
+import { Project, DbEvaluation } from "../../types";
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../src/context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 
 const adaptDbProject = (dbProject: any): Project => ({
   id: dbProject.id,
@@ -213,8 +213,8 @@ const Dashboard: React.FC = () => {
                 <Card
                   key={project.id}
                   className={`transition-all duration-300 ${isCompleted
-                      ? "bg-[#1a0b2e]/50 border-[#6b7280]/30"
-                      : "bg-[#2d1b69]/30 border-[#C68313]/20 hover:border-[#C68313]/50"
+                    ? "bg-[#1a0b2e]/50 border-[#6b7280]/30"
+                    : "bg-[#2d1b69]/30 border-[#C68313]/20 hover:border-[#C68313]/50"
                     }`}
                 >
                   <CardContent className="p-6 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -278,8 +278,8 @@ const TabButton = ({ active, onClick, label }: { active: boolean; onClick: () =>
   <Button
     onClick={onClick}
     className={`rounded-lg px-6 ${active
-        ? "bg-[#C68313] text-black hover:bg-[#C68313]/90"
-        : "bg-[#2d1b69]/40 text-white border border-[#C68313]/30 hover:bg-[#2d1b69]/60"
+      ? "bg-[#C68313] text-black hover:bg-[#C68313]/90"
+      : "bg-[#2d1b69]/40 text-white border border-[#C68313]/30 hover:bg-[#2d1b69]/60"
       }`}
   >
     {label}

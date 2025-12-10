@@ -3,9 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { ArrowLeft } from "lucide-react";
-import { Project, ClientEvaluationData, DbEvaluation } from "../types";
+import { Project, ClientEvaluationData, DbEvaluation } from "../../types";
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../src/context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 
 const defaultEvaluation: ClientEvaluationData = {
   relevance: 5,
@@ -246,9 +246,8 @@ const Evaluation: React.FC = () => {
           {options.map((opt) => (
             <label
               key={opt.value + opt.label}
-              className={`flex items-center justify-between px-3 py-2 rounded border cursor-pointer ${
-                evaluationData[key] === opt.value ? "border-[#F5A623] text-white" : "border-[#8B4FB3]/60 text-gray-300"
-              }`}
+              className={`flex items-center justify-between px-3 py-2 rounded border cursor-pointer ${evaluationData[key] === opt.value ? "border-[#F5A623] text-white" : "border-[#8B4FB3]/60 text-gray-300"
+                }`}
             >
               <span>{opt.label}</span>
               <input
@@ -393,11 +392,10 @@ const Evaluation: React.FC = () => {
                   (opt) => (
                     <label
                       key={opt.value}
-                      className={`flex items-center justify-between px-3 py-2 rounded border cursor-pointer ${
-                        evaluationData.penaltyTime === opt.value
-                          ? "border-[#F5A623] text-white"
-                          : "border-[#8B4FB3]/60 text-gray-300"
-                      }`}
+                      className={`flex items-center justify-between px-3 py-2 rounded border cursor-pointer ${evaluationData.penaltyTime === opt.value
+                        ? "border-[#F5A623] text-white"
+                        : "border-[#8B4FB3]/60 text-gray-300"
+                        }`}
                     >
                       <span>{opt.label}</span>
                       <input
@@ -422,9 +420,8 @@ const Evaluation: React.FC = () => {
                     <button
                       key={opt.value}
                       type="button"
-                      className={`px-3 py-2 rounded border text-sm ${
-                        checked ? "border-red-400 text-red-200 bg-red-900/20" : "border-[#8B4FB3]/60 text-gray-200"
-                      }`}
+                      className={`px-3 py-2 rounded border text-sm ${checked ? "border-red-400 text-red-200 bg-red-900/20" : "border-[#8B4FB3]/60 text-gray-200"
+                        }`}
                       onClick={() => handlePenaltySelect(opt.value)}
                     >
                       {opt.label}

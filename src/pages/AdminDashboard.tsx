@@ -4,9 +4,9 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../src/context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import { Check, UserPlus, FilePlus, Trophy, TrendingUp, Eye, EyeOff, ArrowUpDown } from "lucide-react";
-import { DbEvaluation } from "../types";
+import { DbEvaluation } from "../../types";
 
 interface JudgeScore {
   judgeName: string;
@@ -236,7 +236,7 @@ const AddJudgeForm: React.FC<{ onSuccess: () => void; themes: Theme[] }> = ({ on
         email: cleanedEmail,
         password,
       });
-      
+
       if (authError) throw authError;
       console.log("no auth errors")
       const newJudgeId = userData.user?.id;
@@ -330,8 +330,8 @@ const AddJudgeForm: React.FC<{ onSuccess: () => void; themes: Theme[] }> = ({ on
                 <label
                   key={t.id}
                   className={`px-3 py-2 rounded border cursor-pointer ${selectedThemeIds.includes(t.id)
-                      ? "border-[#F5A623] text-[#F5A623]"
-                      : "border-[#8B4FB3]/60 text-white"
+                    ? "border-[#F5A623] text-[#F5A623]"
+                    : "border-[#8B4FB3]/60 text-white"
                     }`}
                 >
                   <input
@@ -638,8 +638,8 @@ const AdminDashboard: React.FC = () => {
         <Button
           onClick={() => setActiveView("rankings")}
           className={`px-6 py-3 rounded-lg flex items-center gap-2 ${activeView === "rankings"
-              ? "bg-[#F5A623] text-[#430870] hover:bg-[#D4941A]"
-              : "bg-[#2d1b69]/40 text-white border border-[#C68313]/30 hover:bg-[#2d1b69]/60"
+            ? "bg-[#F5A623] text-[#430870] hover:bg-[#D4941A]"
+            : "bg-[#2d1b69]/40 text-white border border-[#C68313]/30 hover:bg-[#2d1b69]/60"
             }`}
         >
           <Trophy className="w-5 h-5" />
@@ -648,8 +648,8 @@ const AdminDashboard: React.FC = () => {
         <Button
           onClick={() => setActiveView("manage")}
           className={`px-6 py-3 rounded-lg flex items-center gap-2 ${activeView === "manage"
-              ? "bg-[#F5A623] text-[#430870] hover:bg-[#D4941A]"
-              : "bg-[#2d1b69]/40 text-white border border-[#C68313]/30 hover:bg-[#2d1b69]/60"
+            ? "bg-[#F5A623] text-[#430870] hover:bg-[#D4941A]"
+            : "bg-[#2d1b69]/40 text-white border border-[#C68313]/30 hover:bg-[#2d1b69]/60"
             }`}
         >
           <TrendingUp className="w-5 h-5" />
