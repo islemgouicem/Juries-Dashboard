@@ -1,0 +1,10 @@
+# Ensure JS and MJS modules are served with correct MIME
+/*.js
+  Content-Type: application/javascript
+
+/*.mjs
+  Content-Type: application/javascript
+
+# Optional: CSS
+/*.css
+  Content-Type: text/css
