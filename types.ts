@@ -1,58 +1,103 @@
-// The base project structure matching the 'projects' table (with minor camelCase adjustments for client-side JS use)
 export interface Project {
   id: string;
   name: string;
-  teamName: string; // Stored as 'team_name' in DB, but client-side it's easier to use camelCase
+  teamName: string;
   problematic: string;
-  teamMembers: string[]; // Stored as 'team_members' TEXT[] in DB
+  teamMembers: string[];
+  themeId: string;
+  themeName?: string;
+  presentationOrder?: number;
+  isActive?: boolean;
 
-  // UI-specific properties (Derived or Merged)
-  status?: 'pending' | 'completed'; // Used in Dashboard logic
-  
-  // Evaluation data for pre-filling/display on the UI
+  status?: "pending" | "completed";
   scores?: {
+    relevance: number;
     innovation: number;
     feasibility: number;
-    technical: number;
+    impact: number;
+    presentation: number;
+    bmc: number;
+    bonusData: number;
+    bonusPrototype: number;
+    bonusQa: number;
+    penaltyTime: number;
+    penaltyQuality: number;
   };
   comments?: {
-    innovation: string;
-    feasibility: string;
-    technical: string;
-  }
+    relevance?: string;
+    innovation?: string;
+    feasibility?: string;
+    impact?: string;
+    presentation?: string;
+    bmc?: string;
+    bonusData?: string;
+    bonusPrototype?: string;
+    bonusQa?: string;
+    penalty?: string;
+  };
 }
 
-// Client data structure for scores/comments - for use within Evaluation.tsx state
 export interface ClientEvaluationData {
-    innovation: number;
-    feasibility: number;
-    technical: number;
-    innovationComment: string; // Maps to 'innovation_comment' in DB access
-    feasibilityComment: string; // Maps to 'feasibility_comment' in DB access
-    technicalComment: string; // Maps to 'technical_comment' in DB access
+  relevance: number;
+  innovation: number;
+  feasibility: number;
+  impact: number;
+  presentation: number;
+  bmc: number;
+  bonusData: number;
+  bonusPrototype: number;
+  bonusQa: number;
+  penaltyTime: number;
+  penaltyQuality: number;
+  relevanceComment: string;
+  innovationComment: string;
+  feasibilityComment: string;
+  impactComment: string;
+  presentationComment: string;
+  bmcComment: string;
+  bonusDataComment: string;
+  bonusPrototypeComment: string;
+  bonusQaComment: string;
+  penaltyComment: string;
 }
 
-// Interface for fetching evaluation data from Supabase
-// Use snake_case to match the database table structure when reading/writing
 export interface DbEvaluation {
-    id: string;
-    created_at: string;
-    judge_id: string;
-    project_id: string;
-    
-    innovation_score: number;
-    feasibility_score: number;
-    technical_score: number;
-    
-    innovation_comment: string;
-    feasibility_comment: string;
-    technical_comment: string;
+  id: string;
+  created_at: string;
+  judge_id: string;
+  project_id: string;
+
+  relevance_score: number | null;
+  innovation_score: number | null;
+  feasibility_score: number | null;
+  impact_score: number | null;
+  presentation_score: number | null;
+
+  bmc_score: number | null;
+
+  bonus_data: number | null;
+  bonus_prototype: number | null;
+  bonus_qa: number | null;
+
+  penalty_time: number | null;
+  penalty_quality: number | null;
+
+  relevance_comment: string | null;
+  innovation_comment: string | null;
+  feasibility_comment: string | null;
+  impact_comment: string | null;
+  presentation_comment: string | null;
+  bmc_comment: string | null;
+  bonus_data_comment: string | null;
+  bonus_proto_comment: string | null;
+  bonus_qa_comment: string | null;
+  penalty_comment: string | null;
 }
 
-// Judge interface to be stored in the AuthContext/Local storage
 export interface JudgeProfile {
-  id: string; // This is the judge_id (auth.users.id in schema)
+  id: string;         // auth.users.id
   name: string;
   email: string;
-  isAdmin: boolean; 
+  isAdmin: boolean;
+  themeIds?: string[];
 }

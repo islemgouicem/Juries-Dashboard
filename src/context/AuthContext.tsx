@@ -1,59 +1,97 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { JudgeProfile } from './../../types';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { supabase } from "../lib/supabase";
+import { JudgeProfile } from "../../types";
 
-interface AuthContextType {
-    judgeProfile: JudgeProfile | null;
-    setJudgeProfile: (profile: JudgeProfile | null) => void;
+interface AuthContextValue {
     isAuthenticated: boolean;
-    logout: () => void;
+    loading: boolean;
+    judgeProfile: JudgeProfile | null;
+    themeIds: string[];
+    login: (email: string, password: string) => Promise<void>;
+    signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
-    const navigate = useNavigate();
-    const [judgeProfile, setJudgeProfile] = useState<JudgeProfile | null>(() => {
-        try {
-            const storedProfile = localStorage.getItem("judgeProfile");
-            return storedProfile ? JSON.parse(storedProfile) : null;
-        } catch (e) {
-            console.error("Failed to parse judgeProfile from local storage", e);
-            return null;
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const [judgeProfile, setJudgeProfile] = useState<JudgeProfile | null>(null);
+    const [themeIds, setThemeIds] = useState<string[]>([]);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    const hydrateProfile = async () => {
+        setLoading(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+            setIsAuthenticated(false);
+            setJudgeProfile(null);
+            setThemeIds([]);
+            setLoading(false);
+            return;
         }
-    });
 
-    useEffect(() => {
-        if (judgeProfile) {
-            localStorage.setItem("judgeProfile", JSON.stringify(judgeProfile));
+        const userId = session.user.id;
+        const { data: profile } = await supabase
+            .from("profiles_1")
+            .select("id, full_name, email, is_admin")
+            .eq("id", userId)
+            .maybeSingle();
+
+        const { data: jt } = await supabase
+            .from("jury_themes_1")
+            .select("theme_id")
+            .eq("jury_id", userId);
+
+        if (profile) {
+            setJudgeProfile({
+                id: profile.id,
+                name: profile.full_name,
+                email: profile.email,
+                isAdmin: !!profile.is_admin,
+                themeIds: jt?.map((r) => r.theme_id) || [],
+            });
+            setThemeIds(jt?.map((r) => r.theme_id) || []);
+            setIsAuthenticated(true);
         } else {
-            localStorage.removeItem("judgeProfile");
-             // Add check for immediate redirection upon programmatic logout (setting to null)
-             if (!judgeProfile && window.location.hash !== '#/') {
-                 navigate('/');
-             }
+            setIsAuthenticated(false);
+            setJudgeProfile(null);
+            setThemeIds([]);
         }
-    }, [judgeProfile, navigate]);
-
-    const logout = () => {
-        setJudgeProfile(null);
-        navigate('/');
+        setLoading(false);
     };
 
-    const isAuthenticated = !!judgeProfile?.id;
+    const login = async (email: string, password: string) => {
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+        if (error) throw error;
+        await hydrateProfile();
+    };
 
-    // Correctly structured JSX return block
+    const signOut = async () => {
+        await supabase.auth.signOut();
+        setIsAuthenticated(false);
+        setJudgeProfile(null);
+        setThemeIds([]);
+    };
+
+    useEffect(() => {
+        hydrateProfile();
+        const { data: sub } = supabase.auth.onAuthStateChange((_event, _session) => {
+            hydrateProfile();
+        });
+        return () => {
+            sub.subscription.unsubscribe();
+        };
+    }, []);
+
     return (
-        <AuthContext.Provider value={{ judgeProfile, setJudgeProfile, isAuthenticated, logout }}>
+        <AuthContext.Provider value={{ isAuthenticated, loading, judgeProfile, themeIds, login, signOut }}>
             {children}
         </AuthContext.Provider>
-    ); 
-}; // The closing brace for the AuthProvider component
+    );
+};
 
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
+export const useAuth = (): AuthContextValue => {
+    const ctx = useContext(AuthContext);
+    if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+    return ctx;
 };

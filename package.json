@@ -1,4 +1,3 @@
-
 {
   "name": "eunoia-jury-portal",
   "private": true,
@@ -22,6 +21,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "@types/react": "^19.2.7",
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.38",
