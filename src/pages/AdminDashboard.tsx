@@ -1,21 +1,24 @@
+import { ArrowUpDown, Check, Eye, EyeOff, FilePlus, TrendingUp, Trophy, UserPlus } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Criteria, CriteriaScore, JuryType } from "../../types";
 import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { supabase } from "../lib/supabase";
+import { Input } from "../components/ui/input";
 import { useAuth } from "../context/AuthContext";
-import { Check, UserPlus, FilePlus, Trophy, TrendingUp, Eye, EyeOff, ArrowUpDown } from "lucide-react";
-import { DbEvaluation } from "../../types";
+import { supabase } from "../lib/supabase";
+
+interface CriteriaScoreDisplay {
+  criteriaName: string;
+  score: number;
+  weight: number;
+  comment?: string;
+}
 
 interface JudgeScore {
   judgeName: string;
-  base: number;
-  bonus: number;
-  penalties: number;
-  bmc: number;
   total: number;
-  comments: Record<string, string | undefined>;
+  criteriaScores: CriteriaScoreDisplay[];
 }
 
 interface ProjectRanking {
@@ -25,7 +28,6 @@ interface ProjectRanking {
   problematic: string;
   teamMembers: string[];
   themeId: string;
-  themeName?: string;
   presentationOrder?: number;
   judgeScores: JudgeScore[];
   totalScore: number;
@@ -35,33 +37,28 @@ interface ProjectRanking {
 
 type Theme = { id: string; name: string };
 
-const computeTotals = (e: DbEvaluation) => {
-  const base =
-    (e.relevance_score ?? 0) * 2.5 +
-    (e.innovation_score ?? 0) * 2 +
-    (e.feasibility_score ?? 0) * 2 +
-    (e.impact_score ?? 0) * 2 +
-    (e.presentation_score ?? 0) * 1.5;
-  const bonus = (e.bonus_data ?? 0) + (e.bonus_prototype ?? 0) + (e.bonus_qa ?? 0);
-  const penalties = (e.penalty_time ?? 0) + (e.penalty_quality ?? 0);
-  const total = base + (e.bmc_score ?? 0) + bonus + penalties;
-  return { base, bonus, penalties, total };
-};
+const JURY_TYPES: JuryType[] = ["AI", "MOBILE", "DESIGN", "PRESENTATION"];
 
 const AddProjectForm: React.FC<{ onSuccess: () => void; themes: Theme[] }> = ({ onSuccess, themes }) => {
-  const [name, setName] = useState("");
   const [teamName, setTeamName] = useState("");
-  const [problematic, setProblematic] = useState("");
-  const [teamMembersInput, setTeamMembersInput] = useState("");
+  const [teamLeader, setTeamLeader] = useState("");
   const [themeId, setThemeId] = useState("");
   const [presentationOrder, setPresentationOrder] = useState<number>(0);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
 
+  const formatThemeName = (name: string) => (name === "Main Problematique" ? "MOBAI" : name);
+
+  useEffect(() => {
+    if (!themeId && themes.length === 1) {
+      setThemeId(themes[0].id);
+    }
+  }, [themes, themeId]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !teamName || !problematic || !teamMembersInput || !themeId) {
-      setMessage("All project fields must be filled.");
+    if (!teamName || !teamLeader || !themeId) {
+      setMessage("Team name, team leader, and theme are required.");
       setStatus("error");
       return;
     }
@@ -70,15 +67,11 @@ const AddProjectForm: React.FC<{ onSuccess: () => void; themes: Theme[] }> = ({ 
     setMessage("");
 
     try {
-      const teamMembersArray = teamMembersInput.split(",").map((m) => m.trim()).filter((m) => m.length > 0);
-
       const { error } = await supabase
         .from("projects_1")
         .insert({
-          name: name.trim(),
           team_name: teamName.trim(),
-          problematic: problematic.trim(),
-          team_members: teamMembersArray,
+          team_leader: teamLeader.trim(),
           theme_id: themeId,
           presentation_order: presentationOrder,
         });
@@ -87,10 +80,8 @@ const AddProjectForm: React.FC<{ onSuccess: () => void; themes: Theme[] }> = ({ 
 
       setMessage("Project added successfully!");
       setStatus("success");
-      setName("");
       setTeamName("");
-      setProblematic("");
-      setTeamMembersInput("");
+      setTeamLeader("");
       setThemeId("");
       setPresentationOrder(0);
       onSuccess();
@@ -123,13 +114,6 @@ const AddProjectForm: React.FC<{ onSuccess: () => void; themes: Theme[] }> = ({ 
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            placeholder="Project Title"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={isSubmitting}
-            className="bg-transparent border-[#8B4FB3]/60 text-white placeholder:text-gray-500"
-          />
-          <Input
             placeholder="Team Name"
             value={teamName}
             onChange={(e) => setTeamName(e.target.value)}
@@ -137,16 +121,9 @@ const AddProjectForm: React.FC<{ onSuccess: () => void; themes: Theme[] }> = ({ 
             className="bg-transparent border-[#8B4FB3]/60 text-white placeholder:text-gray-500"
           />
           <Input
-            placeholder="Problematic / Theme"
-            value={problematic}
-            onChange={(e) => setProblematic(e.target.value)}
-            disabled={isSubmitting}
-            className="bg-transparent border-[#8B4FB3]/60 text-white placeholder:text-gray-500"
-          />
-          <Input
-            placeholder="Team Members (Comma-separated)"
-            value={teamMembersInput}
-            onChange={(e) => setTeamMembersInput(e.target.value)}
+            placeholder="Team Leader"
+            value={teamLeader}
+            onChange={(e) => setTeamLeader(e.target.value)}
             disabled={isSubmitting}
             className="bg-transparent border-[#8B4FB3]/60 text-white placeholder:text-gray-500"
           />
@@ -154,14 +131,14 @@ const AddProjectForm: React.FC<{ onSuccess: () => void; themes: Theme[] }> = ({ 
             className="w-full bg-transparent border border-[#8B4FB3]/60 text-white rounded px-3 py-2"
             value={themeId}
             onChange={(e) => setThemeId(e.target.value)}
-            disabled={isSubmitting}
+            disabled={isSubmitting || themes.length === 1}
           >
             <option value="" className="text-black">
               Select theme
             </option>
             {themes.map((t) => (
               <option key={t.id} value={t.id} className="text-black">
-                {t.name}
+                {formatThemeName(t.name)}
               </option>
             ))}
           </select>
@@ -188,18 +165,14 @@ const AddProjectForm: React.FC<{ onSuccess: () => void; themes: Theme[] }> = ({ 
   );
 };
 
-const AddJudgeForm: React.FC<{ onSuccess: () => void; themes: Theme[] }> = ({ onSuccess, themes }) => {
+const AddJudgeForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
-  const [selectedThemeIds, setSelectedThemeIds] = useState<string[]>([]);
+  const [juryType, setJuryType] = useState<JuryType | "">("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
-
-  const toggleTheme = (id: string) => {
-    setSelectedThemeIds((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,8 +180,8 @@ const AddJudgeForm: React.FC<{ onSuccess: () => void; themes: Theme[] }> = ({ on
     const cleanedEmail = email;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!fullName || !cleanedEmail || !password || !password2 || selectedThemeIds.length === 0) {
-      setMessage("Full name, email, password, and at least one theme are required.");
+    if (!fullName || !cleanedEmail || !password || !password2 || !juryType) {
+      setMessage("Full name, email, password, and jury type are required.");
       setStatus("error");
       return;
     }
@@ -247,22 +220,17 @@ const AddJudgeForm: React.FC<{ onSuccess: () => void; themes: Theme[] }> = ({ on
         full_name: fullName.trim(),
         email: cleanedEmail,
         is_admin: false,
+        type: juryType,
       });
       if (profileError) throw profileError;
-
-      if (selectedThemeIds.length) {
-        const rows = selectedThemeIds.map((tid) => ({ jury_id: newJudgeId, theme_id: tid }));
-        const { error: jtErr } = await supabase.from("jury_themes_1").insert(rows);
-        if (jtErr) throw jtErr;
-      }
-
+      
       setMessage(`Judge ${fullName} added successfully.`);
       setStatus("success");
       setFullName("");
       setEmail("");
       setPassword("");
       setPassword2("");
-      setSelectedThemeIds([]);
+      setJuryType("");
       onSuccess();
     } catch (e: any) {
       console.error("Error adding judge:", e);
@@ -324,26 +292,20 @@ const AddJudgeForm: React.FC<{ onSuccess: () => void; themes: Theme[] }> = ({ on
             className="bg-transparent border-[#8B4FB3]/60 text-white placeholder:text-gray-500"
           />
           <div className="space-y-2 text-white text-sm">
-            <div>Select themes (multi):</div>
-            <div className="flex flex-wrap gap-2">
-              {themes.map((t) => (
-                <label
-                  key={t.id}
-                  className={`px-3 py-2 rounded border cursor-pointer ${selectedThemeIds.includes(t.id)
-                    ? "border-[#F5A623] text-[#F5A623]"
-                    : "border-[#8B4FB3]/60 text-white"
-                    }`}
-                >
-                  <input
-                    type="checkbox"
-                    className="hidden"
-                    checked={selectedThemeIds.includes(t.id)}
-                    onChange={() => toggleTheme(t.id)}
-                  />
-                  {t.name}
-                </label>
+            <div>Jury Type:</div>
+            <select
+              className="w-full bg-transparent border border-[#8B4FB3]/60 text-white rounded px-3 py-2"
+              value={juryType}
+              onChange={(e) => setJuryType(e.target.value as JuryType)}
+              disabled={isSubmitting}
+            >
+              <option value="" className="text-black">Select type</option>
+              {JURY_TYPES.map((t) => (
+                <option key={t} value={t} className="text-black">
+                  {t}
+                </option>
               ))}
-            </div>
+            </select>
           </div>
           <Button type="submit" disabled={isSubmitting} className="w-full bg-[#F5A623] text-[#430870] hover:bg-[#D4941A]">
             {isSubmitting ? "Adding..." : "Add Judge"}
@@ -362,7 +324,6 @@ const AddJudgeForm: React.FC<{ onSuccess: () => void; themes: Theme[] }> = ({ on
 
 const RankingsView: React.FC = () => {
   const [rankings, setRankings] = useState<ProjectRanking[]>([]);
-  const [themes, setThemes] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
 
@@ -370,7 +331,7 @@ const RankingsView: React.FC = () => {
     fetchRankings();
     const channel = supabase
       .channel("evaluations-rankings")
-      .on("postgres_changes", { event: "*", schema: "public", table: "evaluations_1" }, fetchRankings)
+      .on("postgres_changes", { event: "*", schema: "public", table: "criteria_scores" }, fetchRankings)
       .on("postgres_changes", { event: "*", schema: "public", table: "projects_1" }, fetchRankings)
       .subscribe();
     return () => {
@@ -382,44 +343,61 @@ const RankingsView: React.FC = () => {
     setLoading(true);
     try {
       const { data: projects } = await supabase.from("projects_1").select("*").order("presentation_order", { ascending: true });
-      const { data: evaluations } = await supabase.from("evaluations_1").select("*");
+      const { data: scores } = await supabase.from("criteria_scores").select("*");
       const { data: profiles } = await supabase.from("profiles_1").select("id, full_name");
-      const { data: themeList } = await supabase.from("themes_1").select("id, name").order("sort_order", { ascending: true });
+      const { data: criteriaList } = await supabase.from("criterias").select("*").order("sort_order", { ascending: true });
 
       const judgesMap: Record<string, string> = {};
       profiles?.forEach((p: any) => {
         judgesMap[p.id] = p.full_name;
       });
 
-      const themeMap: Record<string, string> = {};
-      themeList?.forEach((t: any) => {
-        themeMap[t.id] = t.name;
+      const criteriaMap: Record<string, Criteria> = {};
+      (criteriaList || []).forEach((c: any) => {
+        criteriaMap[c.id] = {
+          id: c.id,
+          name: c.name,
+          type: c.type,
+          description: c.description,
+          weight: c.weight,
+          maxScore: c.max_score,
+          sortOrder: c.sort_order,
+        };
       });
-      setThemes(themeMap);
 
       const projectRankings: ProjectRanking[] = (projects || []).map((project: any) => {
-        const projectEvals = (evaluations || []).filter((e: any) => e.project_id === project.id);
-        const judgeScores: JudgeScore[] = projectEvals.map((evaluation: DbEvaluation) => {
-          const t = computeTotals(evaluation);
+        const projectScores = (scores || []).filter((s: any) => s.project_id === project.id);
+        const scoresByJudge: Record<string, CriteriaScore[]> = {};
+        projectScores.forEach((s: any) => {
+          const row: CriteriaScore = {
+            id: s.id,
+            createdAt: s.created_at,
+            judgeId: s.judge_id,
+            projectId: s.project_id,
+            criteriaId: s.criteria_id,
+            score: s.score ?? 0,
+            comment: s.comment,
+          };
+          scoresByJudge[row.judgeId] = scoresByJudge[row.judgeId] || [];
+          scoresByJudge[row.judgeId].push(row);
+        });
+
+        const judgeScores: JudgeScore[] = Object.entries(scoresByJudge).map(([judgeId, rows]) => {
+          const criteriaScores: CriteriaScoreDisplay[] = rows.map((r) => {
+            const c = criteriaMap[r.criteriaId];
+            return {
+              criteriaName: c?.name || "Criteria",
+              score: r.score,
+              weight: c?.weight ?? 1,
+              comment: r.comment ?? undefined,
+            };
+          });
+
+          const total = criteriaScores.reduce((sum, cs) => sum + cs.score * cs.weight, 0);
           return {
-            judgeName: judgesMap[evaluation.judge_id] || "Unknown Judge",
-            base: t.base,
-            bonus: t.bonus + (evaluation.bmc_score ?? 0),
-            penalties: t.penalties,
-            bmc: evaluation.bmc_score ?? 0,
-            total: t.total,
-            comments: {
-              relevance: evaluation.relevance_comment ?? undefined,
-              innovation: evaluation.innovation_comment ?? undefined,
-              feasibility: evaluation.feasibility_comment ?? undefined,
-              impact: evaluation.impact_comment ?? undefined,
-              presentation: evaluation.presentation_comment ?? undefined,
-              bmc: evaluation.bmc_comment ?? undefined,
-              bonusData: evaluation.bonus_data_comment ?? undefined,
-              bonusPrototype: evaluation.bonus_proto_comment ?? undefined,
-              bonusQa: evaluation.bonus_qa_comment ?? undefined,
-              penalty: evaluation.penalty_comment ?? undefined,
-            },
+            judgeName: judgesMap[judgeId] || "Unknown Judge",
+            total,
+            criteriaScores,
           };
         });
 
@@ -434,7 +412,6 @@ const RankingsView: React.FC = () => {
           problematic: project.problematic,
           teamMembers: project.team_members || [],
           themeId: project.theme_id,
-          themeName: themeMap[project.theme_id],
           presentationOrder: project.presentation_order,
           judgeScores,
           totalScore,
@@ -444,7 +421,7 @@ const RankingsView: React.FC = () => {
       });
 
       projectRankings.sort((a, b) => {
-        if (a.themeName !== b.themeName) return (a.themeName || "").localeCompare(b.themeName || "");
+        if (b.avgScore !== a.avgScore) return b.avgScore - a.avgScore;
         return (a.presentationOrder ?? 0) - (b.presentationOrder ?? 0);
       });
       setRankings(projectRankings);
@@ -470,107 +447,92 @@ const RankingsView: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-serif text-[#F5A623] flex items-center gap-3">
-          <Trophy className="w-8 h-8" /> Project Rankings by Theme
+          <Trophy className="w-8 h-8" /> Project Rankings
         </h2>
         <div className="text-white text-sm">
           <span className="text-gray-400">Total Projects:</span> {rankings.length}
         </div>
       </div>
 
-      {Object.entries(
-        rankings.reduce((acc: Record<string, ProjectRanking[]>, r) => {
-          const key = r.themeName || "Other";
-          acc[key] = acc[key] || [];
-          acc[key].push(r);
-          return acc;
-        }, {})
-      ).map(([theme, items]: [string, ProjectRanking[]]) => (
-        <div key={theme} className="space-y-3">
-          <div className="flex items-center gap-2 text-[#F5A623]">
-            <ArrowUpDown className="w-5 h-5" />
-            <h3 className="text-2xl font-semibold">{theme}</h3>
-          </div>
-          {items.map((project, index) => (
-            <Card
-              key={project.id}
-              className={`bg-[#2d1b69]/30 border transition-all duration-300 ${index < 3 ? "border-[#FFD700]/30 hover:border-[#FFD700]/50" : "border-[#C68313]/20 hover:border-[#C68313]/50"
-                }`}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="flex-shrink-0 w-12 flex justify-center">{getMedalIcon(index + 1)}</div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-xl font-bold text-[#C68313]">{project.teamName}</h3>
-                        {project.numJudges === 0 && (
-                          <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded">Not Evaluated</span>
-                        )}
-                      </div>
-                      <p className="text-white font-medium">{project.name}</p>
-                      <p className="text-sm text-gray-400 mt-1">{project.teamMembers?.join(", ")}</p>
-                      <p className="text-xs text-gray-500 mt-1">Order: {project.presentationOrder ?? 0}</p>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-[#F5A623]">
+          <ArrowUpDown className="w-5 h-5" />
+          <h3 className="text-2xl font-semibold">Overall</h3>
+        </div>
+        {rankings.map((project, index) => (
+          <Card
+            key={project.id}
+            className={`bg-[#2d1b69]/30 border transition-all duration-300 ${index < 3 ? "border-[#FFD700]/30 hover:border-[#FFD700]/50" : "border-[#C68313]/20 hover:border-[#C68313]/50"
+              }`}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="flex-shrink-0 w-12 flex justify-center">{getMedalIcon(index + 1)}</div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-xl font-bold text-[#C68313]">{project.teamName}</h3>
+                      {project.numJudges === 0 && (
+                        <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded">Not Evaluated</span>
+                      )}
                     </div>
-                  </div>
-
-                  <div className="text-right flex items-center gap-4">
-                    <div>
-                      <div className="text-3xl font-bold text-[#F5A623]">{project.avgScore.toFixed(1)}</div>
-                      <div className="text-sm text-gray-400">/ 125</div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {project.numJudges} {project.numJudges === 1 ? "evaluation" : "evaluations"}
-                      </div>
-                    </div>
-
-                    <Button
-                      onClick={() => setExpandedProject(expandedProject === project.id ? null : project.id)}
-                      className="bg-[#2d1b69]/60 hover:bg-[#2d1b69]/80 text-white p-2"
-                    >
-                      {expandedProject === project.id ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </Button>
+                    <p className="text-white font-medium">{project.name}</p>
+                    <p className="text-sm text-gray-400 mt-1">{project.teamMembers?.join(", ")}</p>
+                    <p className="text-xs text-gray-500 mt-1">Order: {project.presentationOrder ?? 0}</p>
                   </div>
                 </div>
 
-                {expandedProject === project.id && (
-                  <div className="mt-6 pt-6 border-t border-[#C68313]/20 space-y-3">
-                    <h4 className="text-white font-semibold mb-2">Evaluations by Judge</h4>
-                    {project.judgeScores.length === 0 ? (
-                      <p className="text-gray-400 text-sm italic">No evaluations yet</p>
-                    ) : (
-                      project.judgeScores.map((score, idx) => (
-                        <div key={idx} className="bg-[#1a0b2e]/50 rounded-lg p-4 border border-[#C68313]/10 space-y-3">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <div className="font-medium text-white">{score.judgeName}</div>
-                              <div className="text-xs text-gray-400">
-                                Base {score.base.toFixed(1)} | BMC {score.bmc} | Bonus {score.bonus.toFixed(1)} | Penalties {score.penalties}
-                              </div>
-                            </div>
-                            <div className="text-xl font-bold text-[#F5A623]">{score.total.toFixed(1)}/125</div>
-                          </div>
-
-                          <div className="text-sm text-gray-300 space-y-1">
-                            {score.comments.relevance && <div><span className="text-gray-400">Relevance:</span> {score.comments.relevance}</div>}
-                            {score.comments.innovation && <div><span className="text-gray-400">Innovation:</span> {score.comments.innovation}</div>}
-                            {score.comments.feasibility && <div><span className="text-gray-400">Feasibility:</span> {score.comments.feasibility}</div>}
-                            {score.comments.impact && <div><span className="text-gray-400">Impact:</span> {score.comments.impact}</div>}
-                            {score.comments.presentation && <div><span className="text-gray-400">Presentation:</span> {score.comments.presentation}</div>}
-                            {score.comments.bmc && <div><span className="text-gray-400">BMC:</span> {score.comments.bmc}</div>}
-                            {score.comments.bonusData && <div><span className="text-gray-400">Bonus Data:</span> {score.comments.bonusData}</div>}
-                            {score.comments.bonusPrototype && <div><span className="text-gray-400">Bonus Prototype:</span> {score.comments.bonusPrototype}</div>}
-                            {score.comments.bonusQa && <div><span className="text-gray-400">Bonus Q&A:</span> {score.comments.bonusQa}</div>}
-                            {score.comments.penalty && <div><span className="text-gray-400">Penalty:</span> {score.comments.penalty}</div>}
-                          </div>
-                        </div>
-                      ))
-                    )}
+                <div className="text-right flex items-center gap-4">
+                  <div>
+                    <div className="text-3xl font-bold text-[#F5A623]">{project.avgScore.toFixed(1)}</div>
+                    <div className="text-sm text-gray-400">pts</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {project.numJudges} {project.numJudges === 1 ? "evaluation" : "evaluations"}
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ))}
+
+                  <Button
+                    onClick={() => setExpandedProject(expandedProject === project.id ? null : project.id)}
+                    className="bg-[#2d1b69]/60 hover:bg-[#2d1b69]/80 text-white p-2"
+                  >
+                    {expandedProject === project.id ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </Button>
+                </div>
+              </div>
+
+              {expandedProject === project.id && (
+                <div className="mt-6 pt-6 border-t border-[#C68313]/20 space-y-3">
+                  <h4 className="text-white font-semibold mb-2">Evaluations by Judge</h4>
+                  {project.judgeScores.length === 0 ? (
+                    <p className="text-gray-400 text-sm italic">No evaluations yet</p>
+                  ) : (
+                    project.judgeScores.map((score, idx) => (
+                      <div key={idx} className="bg-[#1a0b2e]/50 rounded-lg p-4 border border-[#C68313]/10 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-medium text-white">{score.judgeName}</div>
+                            <div className="text-xs text-gray-400">Total {score.total.toFixed(1)} pts</div>
+                          </div>
+                          <div className="text-xl font-bold text-[#F5A623]">{score.total.toFixed(1)} pts</div>
+                        </div>
+
+                        <div className="text-sm text-gray-300 space-y-1">
+                          {score.criteriaScores.map((c, cIdx) => (
+                            <div key={cIdx}>
+                              <span className="text-gray-400">{c.criteriaName}:</span> {c.score} × {c.weight}
+                              {c.comment ? <span className="text-gray-500"> — {c.comment}</span> : null}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };
@@ -593,22 +555,21 @@ const AdminDashboard: React.FC = () => {
     setProjects(data || []);
   };
 
-  const groupedProjects = useMemo(() => {
-    return (projects || []).reduce((acc: Record<string, any[]>, p: any) => {
-      acc[p.theme_id] = acc[p.theme_id] || [];
-      acc[p.theme_id].push(p);
-      return acc;
-    }, {});
+  const orderedProjects = useMemo(() => {
+    return (projects || []).slice().sort((a: any, b: any) => (a.presentation_order ?? 0) - (b.presentation_order ?? 0));
   }, [projects]);
 
   return (
     <div className="p-6 md:p-12 pt-32 max-w-7xl mx-auto w-full min-h-screen">
-      <div className="fixed top-0 left-0 right-0 bg-[#2B1055] z-50" style={{ borderBottom: "1px solid #F5A623" }}>
-        <div className="flex justify-between items-center py-6 px-6 md:px-12 max-w-7xl mx-auto">
-          <img src="/LOGO.png" alt="Eunoia" className="h-12 w-auto" />
+      <div className="fixed top-0 left-0 right-0 mobai-topbar z-50">
+        <div className="flex justify-between items-center py-5 px-6 md:px-12 max-w-7xl mx-auto">
+          <div className="flex items-center gap-3">
+            <img src="/mobai_logo_1.png" alt="Mob AI" className="h-10 w-auto" />
+            <span className="mobai-chip hidden sm:inline-flex">Admin</span>
+          </div>
           <div className="text-white text-right">
-            <p className="text-xl font-light">
-              Welcome, <span className="font-normal">{judgeProfile?.name || "Admin"}</span>
+            <p className="text-lg font-light">
+              Welcome, <span className="font-normal text-white">{judgeProfile?.name || "Admin"}</span>
             </p>
           </div>
           <button
@@ -616,7 +577,7 @@ const AdminDashboard: React.FC = () => {
               await signOut();
               window.location.href = "/";
             }}
-            className="border border-slate-200 px-4 py-2 rounded hover:bg-slate-50"
+            className="mobai-button-outline px-4 py-2"
           >
             Sign Out
           </button>
@@ -661,35 +622,28 @@ const AdminDashboard: React.FC = () => {
         <RankingsView />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <AddJudgeForm onSuccess={() => { }} themes={themes} />
+          <AddJudgeForm onSuccess={() => { }} />
           <AddProjectForm onSuccess={() => { }} themes={themes} />
         </div>
       )}
 
       <div className="mt-12 space-y-6">
-        <h3 className="text-2xl text-[#F5A623]">Presentation Order (per theme)</h3>
-        {Object.entries(groupedProjects).map(([themeId, items]: [string, any[]]) => (
-          <Card key={themeId} className="bg-[#2d1b69]/30 border-[#C68313]/20">
-            <CardContent className="p-4 space-y-3">
-              <div className="text-white font-semibold">
-                {themes.find((t) => t.id === themeId)?.name || "Theme"}
+        <h3 className="text-2xl text-[#F5A623]">Presentation Order</h3>
+        <Card className="bg-[#2d1b69]/30 border-[#C68313]/20">
+          <CardContent className="p-4 space-y-3">
+            {orderedProjects.map((p: any) => (
+              <div key={p.id} className="flex items-center gap-3 text-white">
+                <Input
+                  type="number"
+                  className="w-20 bg-transparent border-[#C68313]/40"
+                  value={p.presentation_order ?? 0}
+                  onChange={(e) => updateOrder(p.id, parseInt(e.target.value || "0", 10))}
+                />
+                <span>{p.team_name} — {p.name}</span>
               </div>
-              {items
-                .sort((a: any, b: any) => (a.presentation_order ?? 0) - (b.presentation_order ?? 0))
-                .map((p: any) => (
-                  <div key={p.id} className="flex items-center gap-3 text-white">
-                    <Input
-                      type="number"
-                      className="w-20 bg-transparent border-[#C68313]/40"
-                      value={p.presentation_order ?? 0}
-                      onChange={(e) => updateOrder(p.id, parseInt(e.target.value || "0", 10))}
-                    />
-                    <span>{p.team_name} — {p.name}</span>
-                  </div>
-                ))}
-            </CardContent>
-          </Card>
-        ))}
+            ))}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="mt-8 text-sm text-gray-500">

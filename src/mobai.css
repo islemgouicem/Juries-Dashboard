@@ -1,0 +1,46 @@
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fira+Code:wght@300..700&family=Raleway:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap");
+
+:root {
+  /* ========== Fonts ========== */
+  --font-bebas: "Bebas Neue", ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* ========== Original Colors ========== */
+  --color-red-main-500: #ff0006;
+  --color-card-title: #f7f0ff;
+  --color-main-red: #e52928;
+  --color-mwhite: #FDFDFD;
+  --color-error: #ff6e6e;
+  --color-subtitle: #FDFDFDCC;
+
+  /* ========== Border Radius ========== */
+  --radius: 0.5rem;
+}
+@layer components {
+  .bebas {
+    font-family: "Bebas Neue", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    @apply tracking-widest;
+  }
+  .title{
+    font-family: "Bebas Neue", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    @apply text-5xl md:text-6xl lg:text-7xl text-[#ff0006] tracking-widest mb-12;
+  }
+
+  .mobai-glow {
+    @apply relative;
+  }
+
+  .mobai-glow::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: linear-gradient(120deg, rgba(255, 0, 6, 0.35), rgba(255, 78, 78, 0.05));
+    z-index: -1;
+    filter: blur(18px);
+    opacity: 0.8;
+  }
+
+  .mobai-badge {
+    @apply text-xs uppercase tracking-[0.18em] text-red-main-500 bg-white/5 border border-white/10 px-3 py-1 rounded-full;
+  }
+}

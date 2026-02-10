@@ -1,12 +1,11 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { supabase } from "../lib/supabase";
+import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import { JudgeProfile } from "../../types";
+import { supabase } from "../lib/supabase";
 
 interface AuthContextValue {
     isAuthenticated: boolean;
     loading: boolean;
     judgeProfile: JudgeProfile | null;
-    themeIds: string[];
     login: (email: string, password: string) => Promise<void>;
     signOut: () => Promise<void>;
 }
@@ -15,7 +14,6 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [judgeProfile, setJudgeProfile] = useState<JudgeProfile | null>(null);
-    const [themeIds, setThemeIds] = useState<string[]>([]);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loading, setLoading] = useState(true);
 
@@ -25,7 +23,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (!session?.user) {
             setIsAuthenticated(false);
             setJudgeProfile(null);
-            setThemeIds([]);
             setLoading(false);
             return;
         }
@@ -33,14 +30,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const userId = session.user.id;
         const { data: profile } = await supabase
             .from("profiles_1")
-            .select("id, full_name, email, is_admin")
+            .select("id, full_name, email, is_admin, type")
             .eq("id", userId)
             .maybeSingle();
-
-        const { data: jt } = await supabase
-            .from("jury_themes_1")
-            .select("theme_id")
-            .eq("jury_id", userId);
 
         if (profile) {
             setJudgeProfile({
@@ -48,14 +40,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 name: profile.full_name,
                 email: profile.email,
                 isAdmin: !!profile.is_admin,
-                themeIds: jt?.map((r) => r.theme_id) || [],
+                type: profile.type || null,
             });
-            setThemeIds(jt?.map((r) => r.theme_id) || []);
             setIsAuthenticated(true);
         } else {
             setIsAuthenticated(false);
             setJudgeProfile(null);
-            setThemeIds([]);
         }
         setLoading(false);
     };
@@ -70,7 +60,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await supabase.auth.signOut();
         setIsAuthenticated(false);
         setJudgeProfile(null);
-        setThemeIds([]);
     };
 
     useEffect(() => {
@@ -84,7 +73,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, loading, judgeProfile, themeIds, login, signOut }}>
+        <AuthContext.Provider value={{ isAuthenticated, loading, judgeProfile, login, signOut }}>
             {children}
         </AuthContext.Provider>
     );

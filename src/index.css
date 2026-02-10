@@ -2,6 +2,8 @@
 ** Base Tailwind Directives
 ** These must come first to initialize the Tailwind layers.
 */
+@import "./mobai.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -12,26 +14,26 @@
 ** Moved from index.html's <style> block.
 */
 :root {
-  --background: 260 50% 10%;
+  --background: 230 18% 6%;
   --foreground: 0 0% 100%;
-  --card: 260 50% 15%;
+  --card: 230 16% 11%;
   --card-foreground: 0 0% 100%;
-  --popover: 260 50% 15%;
+  --popover: 230 16% 12%;
   --popover-foreground: 0 0% 100%;
-  --primary: 35 90% 50%;
+  --primary: 0 100% 51%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 260 30% 20%;
+  --secondary: 230 12% 16%;
   --secondary-foreground: 0 0% 100%;
-  --muted: 260 20% 20%;
-  --muted-foreground: 260 20% 70%;
-  --accent: 260 40% 30%;
+  --muted: 230 10% 18%;
+  --muted-foreground: 220 10% 70%;
+  --accent: 0 84% 56%;
   --accent-foreground: 0 0% 100%;
-  --destructive: 0 62.8% 30.6%;
+  --destructive: 0 70% 45%;
   --destructive-foreground: 0 0% 98%;
-  --border: 260 30% 30%;
-  --input: 260 30% 30%;
-  --ring: 35 90% 50%;
-  --radius: 0.5rem;
+  --border: 230 10% 22%;
+  --input: 230 10% 22%;
+  --ring: 0 100% 51%;
+  --radius: 0.75rem;
 }
 
 /*
@@ -39,25 +41,123 @@
 ** Moved from index.html's <style> block.
 */
 body {
-  /* Set new Primary Purple as per instruction */
-  background-color: #430870;
-  color: white;
-  /* Reverted back to simple background. The gradients and stars are moved to Layout.tsx. */
+  background-color: #0b0b10;
+  color: #fdfdfd;
+  font-family: "Raleway", system-ui, -apple-system, sans-serif;
+  letter-spacing: 0.01em;
 }
+
+@layer base {
+  h1, h2, h3, h4 {
+    font-family: "Bebas Neue", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.08em;
+  }
+}
+
+@layer components {
+  .mobai-app {
+    @apply min-h-screen text-white bg-[#0b0b10] relative overflow-x-hidden;
+  }
+
+  .mobai-topbar {
+    @apply bg-[#0f111a]/90 backdrop-blur-xl border-b border-white/10;
+  }
+
+  .mobai-card {
+    @apply bg-[#141521]/70 border border-white/10 backdrop-blur-xl rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.45)];
+  }
+
+  .mobai-card-soft {
+    @apply shadow-none border-white/15;
+  }
+
+  .mobai-panel {
+    @apply bg-[#10111a]/70 border border-white/10 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.35)];
+  }
+
+  .mobai-input {
+    @apply bg-[#0f1018]/80 border border-white/10 text-white placeholder:text-white/40 focus-visible:ring-0 focus-visible:border-[#ff0006] rounded-xl h-[48px] px-4 shadow-none;
+  }
+
+  .mobai-textarea {
+    @apply bg-[#0f1018]/80 border border-white/10 text-white placeholder:text-white/40 focus-visible:ring-0 focus-visible:border-[#ff0006] rounded-xl p-3 shadow-none;
+  }
+
+  .mobai-login-bg {
+    background-image: url("/background.svg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  .mobai-text-gradient {
+    background: #ff0006;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .mobai-button {
+    @apply bg-gradient-to-r from-[#ff0006] to-[#ff4b4b] text-white font-semibold rounded-xl shadow-[0_10px_30px_rgba(255,0,6,0.35)] hover:opacity-95;
+  }
+
+  .mobai-button-outline {
+    @apply border border-white/15 text-white bg-white/5 rounded-xl hover:bg-white/10;
+  }
+
+  .mobai-chip {
+    @apply text-xs uppercase tracking-[0.18em] text-white/80 bg-white/5 border border-white/10 px-3 py-1 rounded-full;
+  }
+}
+
+/* Color overrides for previous theme utility classes */
+.bg-\[\#430870\] { background-color: #0b0b10 !important; }
+.bg-\[\#2B1055\] { background-color: #0f111a !important; }
+.bg-\[\#2d1b69\] { background-color: #141521 !important; }
+.bg-\[\#2d1b69\]\/30 { background-color: rgba(20, 21, 33, 0.6) !important; }
+.bg-\[\#2d1b69\]\/40 { background-color: rgba(20, 21, 33, 0.7) !important; }
+.bg-\[\#2d1b69\]\/50 { background-color: rgba(20, 21, 33, 0.8) !important; }
+.bg-\[\#2d1b69\]\/60 { background-color: rgba(20, 21, 33, 0.85) !important; }
+.bg-\[\#1a0b2e\] { background-color: #0e0f16 !important; }
+.bg-\[\#1a0b2e\]\/30 { background-color: rgba(14, 15, 22, 0.7) !important; }
+.bg-\[\#1a0b2e\]\/50 { background-color: rgba(14, 15, 22, 0.85) !important; }
+
+.border-\[\#C68313\] { border-color: #ff0006 !important; }
+.border-\[\#F5A623\] { border-color: #ff0006 !important; }
+.border-\[\#C68313\]\/30 { border-color: rgba(255, 0, 6, 0.3) !important; }
+.border-\[\#C68313\]\/20 { border-color: rgba(255, 0, 6, 0.2) !important; }
+.border-\[\#C68313\]\/40 { border-color: rgba(255, 0, 6, 0.4) !important; }
+.border-\[\#C68313\]\/10 { border-color: rgba(255, 0, 6, 0.1) !important; }
+.border-\[\#F5A623\]\/40 { border-color: rgba(255, 0, 6, 0.4) !important; }
+.border-\[\#FFD700\]\/30 { border-color: rgba(255, 0, 6, 0.3) !important; }
+.border-\[\#FFD700\]\/50 { border-color: rgba(255, 0, 6, 0.5) !important; }
+
+.text-\[\#C68313\] { color: #ff0006 !important; }
+.text-\[\#F5A623\] { color: #ff4b4b !important; }
+.text-\[\#430870\] { color: #0b0b10 !important; }
+
+.bg-\[\#C68313\] { background-color: #ff0006 !important; }
+.bg-\[\#F5A623\] { background-color: #ff0006 !important; }
+.bg-\[\#D4941A\] { background-color: #ff2b2b !important; }
+
+.hover\:bg-\[\#D4941A\]:hover { background-color: #ff2b2b !important; }
+.hover\:bg-\[\#C68313\]\/90:hover { background-color: rgba(255, 0, 6, 0.9) !important; }
+.hover\:bg-\[\#2d1b69\]\/60:hover { background-color: rgba(20, 21, 33, 0.85) !important; }
+.hover\:bg-\[\#2d1b69\]\/80:hover { background-color: rgba(20, 21, 33, 0.9) !important; }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #1a0b2e; 
+  background: #0d0e16; 
 }
 ::-webkit-scrollbar-thumb {
-  background: #4a2b75; 
+  background: #2b2f3d; 
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #C68313; 
+  background: #ff0006; 
 }
 
 /* Range Slider Styling */
@@ -70,10 +170,10 @@ input[type=range]::-webkit-slider-thumb {
   height: 16px;
   width: 16px;
   border-radius: 50%;
-  background: #FFD700;
+  background: #ff0006;
   cursor: pointer;
   margin-top: -6px; 
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  box-shadow: 0 0 10px rgba(255, 0, 6, 0.5);
 }
 input[type=range]::-webkit-slider-runnable-track {
   width: 100%;
