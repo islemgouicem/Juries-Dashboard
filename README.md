@@ -1,4 +1,4 @@
-# Eunoia Jury Portal
+# Jury Portal
 
 A judge/administrator evaluation portal built using React, TypeScript, Vite, and Supabase.
 
