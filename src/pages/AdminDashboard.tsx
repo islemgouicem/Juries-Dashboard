@@ -543,6 +543,7 @@ const AdminDashboard: React.FC = () => {
   const [activeView, setActiveView] = useState<"rankings" | "manage">("rankings");
   const [themes, setThemes] = useState<Theme[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
+  const [dragProjectId, setDragProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.from("themes_1").select("*").order("sort_order").then(({ data }) => setThemes((data as Theme[]) || []));
@@ -555,12 +556,30 @@ const AdminDashboard: React.FC = () => {
     setProjects(data || []);
   };
 
+  const swapOrder = async (sourceId: string, targetId: string) => {
+    if (sourceId === targetId) return;
+    const source = projects.find((p: any) => p.id === sourceId);
+    const target = projects.find((p: any) => p.id === targetId);
+    if (!source || !target) return;
+
+    const sourceOrder = source.presentation_order ?? 0;
+    const targetOrder = target.presentation_order ?? 0;
+
+    await Promise.all([
+      supabase.from("projects_1").update({ presentation_order: targetOrder }).eq("id", sourceId),
+      supabase.from("projects_1").update({ presentation_order: sourceOrder }).eq("id", targetId),
+    ]);
+
+    const { data } = await supabase.from("projects_1").select("*").order("presentation_order");
+    setProjects(data || []);
+  };
+
   const orderedProjects = useMemo(() => {
     return (projects || []).slice().sort((a: any, b: any) => (a.presentation_order ?? 0) - (b.presentation_order ?? 0));
   }, [projects]);
 
   return (
-    <div className="p-6 md:p-12 pt-32 max-w-7xl mx-auto w-full min-h-screen">
+    <div className="p-6 md:p-12 pt-44 max-w-7xl mx-auto w-full min-h-screen">
       <div className="fixed top-0 left-0 right-0 mobai-topbar z-50">
         <div className="flex justify-between items-center py-5 px-6 md:px-12 max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
@@ -584,7 +603,7 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-8 mt-20">
         <h1 className="text-4xl font-serif text-[#F5A623]">Admin Panel</h1>
         <Button
           onClick={() => navigate("/dashboard")}
@@ -628,17 +647,28 @@ const AdminDashboard: React.FC = () => {
       )}
 
       <div className="mt-12 space-y-6">
-        <h3 className="text-2xl text-[#F5A623]">Presentation Order</h3>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <h3 className="text-2xl text-[#F5A623]">Presentation Order</h3>
+          <p className="text-xs text-gray-400">Drag a team to swap order</p>
+        </div>
         <Card className="bg-[#2d1b69]/30 border-[#C68313]/20">
           <CardContent className="p-4 space-y-3">
             {orderedProjects.map((p: any) => (
-              <div key={p.id} className="flex items-center gap-3 text-white">
-                <Input
-                  type="number"
-                  className="w-20 bg-transparent border-[#C68313]/40"
-                  value={p.presentation_order ?? 0}
-                  onChange={(e) => updateOrder(p.id, parseInt(e.target.value || "0", 10))}
-                />
+              <div
+                key={p.id}
+                className={`flex items-center gap-3 text-white rounded-lg p-2 border ${
+                  dragProjectId === p.id ? "border-[#F5A623] bg-[#2d1b69]/40" : "border-red-500/20 hover:border-red-500/50 hover:bg-[#2d1b69]/20"
+                }`}
+                draggable
+                onDragStart={() => setDragProjectId(p.id)}
+                onDragEnd={() => setDragProjectId(null)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => {
+                  if (dragProjectId) swapOrder(dragProjectId, p.id);
+                  setDragProjectId(null);
+                }}
+              >
+                <span className="w-10 text-right text-[#F5A623] font-semibold">{p.presentation_order ?? 0}</span>
                 <span>{p.team_name} — {p.name}</span>
               </div>
             ))}
