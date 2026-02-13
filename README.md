@@ -1,5 +1,5 @@
 # Jury Portal
-
+currentlly for mobai
 A judge/administrator evaluation portal built using React, TypeScript, Vite, and Supabase.
 
 This application allows administrators to add new projects and judges, and provides a real-time, consolidated rankings view. Judges can log in to view pending projects and submit their evaluations.
