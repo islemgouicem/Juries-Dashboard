@@ -12,11 +12,13 @@ interface CriteriaScoreDisplay {
   criteriaName: string;
   score: number;
   weight: number;
+  maxScore: number;
   comment?: string;
 }
 
 interface JudgeScore {
   judgeName: string;
+  judgeType?: JuryType | null;
   total: number;
   criteriaScores: CriteriaScoreDisplay[];
 }
@@ -344,12 +346,14 @@ const RankingsView: React.FC = () => {
     try {
       const { data: projects } = await supabase.from("projects_1").select("*").order("presentation_order", { ascending: true });
       const { data: scores } = await supabase.from("criteria_scores").select("*");
-      const { data: profiles } = await supabase.from("profiles_1").select("id, full_name");
+      const { data: profiles } = await supabase.from("profiles_1").select("id, full_name, type");
       const { data: criteriaList } = await supabase.from("criterias").select("*").order("sort_order", { ascending: true });
 
       const judgesMap: Record<string, string> = {};
+      const judgeTypeMap: Record<string, JuryType | null> = {};
       profiles?.forEach((p: any) => {
         judgesMap[p.id] = p.full_name;
+        judgeTypeMap[p.id] = p.type || null;
       });
 
       const criteriaMap: Record<string, Criteria> = {};
@@ -389,20 +393,59 @@ const RankingsView: React.FC = () => {
               criteriaName: c?.name || "Criteria",
               score: r.score,
               weight: c?.weight ?? 1,
+              maxScore: c?.maxScore ?? 10,
               comment: r.comment ?? undefined,
             };
           });
 
-          const total = criteriaScores.reduce((sum, cs) => sum + cs.score * cs.weight, 0);
+          const total = criteriaScores.reduce((sum, cs) => sum + (cs.score / cs.maxScore) * cs.weight, 0);
           return {
             judgeName: judgesMap[judgeId] || "Unknown Judge",
+            judgeType: judgeTypeMap[judgeId],
             total,
             criteriaScores,
           };
         });
 
-        const totalScore = judgeScores.reduce((sum, js) => sum + js.total, 0);
-        const avgScore = judgeScores.length > 0 ? totalScore / judgeScores.length : 0;
+        const scoresByTypeAndCriteria: Record<JuryType, Record<string, number[]>> = {
+          AI: {},
+          MOBILE: {},
+          DESIGN: {},
+          PRESENTATION: {},
+        };
+
+        Object.values(criteriaMap).forEach((c) => {
+          if (!scoresByTypeAndCriteria[c.type]) return;
+          scoresByTypeAndCriteria[c.type][c.id] = [];
+        });
+
+        projectScores.forEach((s: any) => {
+          const judgeType = judgeTypeMap[s.judge_id];
+          if (!judgeType || !scoresByTypeAndCriteria[judgeType]) return;
+          if (!scoresByTypeAndCriteria[judgeType][s.criteria_id]) {
+            scoresByTypeAndCriteria[judgeType][s.criteria_id] = [];
+          }
+          scoresByTypeAndCriteria[judgeType][s.criteria_id].push(s.score ?? 0);
+        });
+
+        const avg = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
+
+        const calcTypeScore = (type: JuryType) => {
+          const criteriaBuckets = scoresByTypeAndCriteria[type] || {};
+          return Object.entries(criteriaBuckets).reduce((sum, [criteriaId, values]) => {
+            const c = criteriaMap[criteriaId];
+            if (!c) return sum;
+            const maxScore = c.maxScore ?? 10;
+            const weight = c.weight ?? 0;
+            const avgScore = avg(values);
+            return sum + (avgScore / maxScore) * weight;
+          }, 0);
+        };
+
+        const presentationScore = calcTypeScore("PRESENTATION");
+        const technicalScore = (calcTypeScore("AI") + calcTypeScore("MOBILE") + calcTypeScore("DESIGN")) / 3;
+        const finalScore = presentationScore * 0.5 + technicalScore * 0.5;
+
         const numJudges = judgeScores.length;
 
         return {
@@ -414,8 +457,8 @@ const RankingsView: React.FC = () => {
           themeId: project.theme_id,
           presentationOrder: project.presentation_order,
           judgeScores,
-          totalScore,
-          avgScore,
+          totalScore: finalScore,
+          avgScore: finalScore,
           numJudges,
         };
       });
@@ -482,14 +525,14 @@ const RankingsView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="text-right flex items-center gap-4">
-                  <div>
-                    <div className="text-3xl font-bold text-[#F5A623]">{project.avgScore.toFixed(1)}</div>
-                    <div className="text-sm text-gray-400">pts</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {project.numJudges} {project.numJudges === 1 ? "evaluation" : "evaluations"}
+                  <div className="text-right flex items-center gap-4">
+                    <div>
+                      <div className="text-3xl font-bold text-[#F5A623]">{project.avgScore.toFixed(1)}</div>
+                      <div className="text-sm text-gray-400">/ 100</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {project.numJudges} {project.numJudges === 1 ? "evaluation" : "evaluations"}
+                      </div>
                     </div>
-                  </div>
 
                   <Button
                     onClick={() => setExpandedProject(expandedProject === project.id ? null : project.id)}
@@ -510,16 +553,19 @@ const RankingsView: React.FC = () => {
                       <div key={idx} className="bg-[#1a0b2e]/50 rounded-lg p-4 border border-[#C68313]/10 space-y-3">
                         <div className="flex justify-between items-start">
                           <div>
-                            <div className="font-medium text-white">{score.judgeName}</div>
-                            <div className="text-xs text-gray-400">Total {score.total.toFixed(1)} pts</div>
+                            <div className="font-medium text-white">
+                              {score.judgeName}
+                              {score.judgeType ? <span className="text-xs text-gray-400"> · {score.judgeType}</span> : null}
+                            </div>
+                            <div className="text-xs text-gray-400">Total {score.total.toFixed(1)} / 100</div>
                           </div>
-                          <div className="text-xl font-bold text-[#F5A623]">{score.total.toFixed(1)} pts</div>
+                          <div className="text-xl font-bold text-[#F5A623]">{score.total.toFixed(1)} / 100</div>
                         </div>
 
                         <div className="text-sm text-gray-300 space-y-1">
                           {score.criteriaScores.map((c, cIdx) => (
                             <div key={cIdx}>
-                              <span className="text-gray-400">{c.criteriaName}:</span> {c.score} × {c.weight}
+                              <span className="text-gray-400">{c.criteriaName}:</span> {c.score}/{c.maxScore} × {c.weight}%
                               {c.comment ? <span className="text-gray-500"> — {c.comment}</span> : null}
                             </div>
                           ))}

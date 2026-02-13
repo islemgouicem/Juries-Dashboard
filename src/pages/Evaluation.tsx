@@ -9,6 +9,8 @@ import { supabase } from "../lib/supabase";
 
 type CriteriaScoreDraft = { score: number; comment: string };
 
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
 const Evaluation: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -108,13 +110,18 @@ const Evaluation: React.FC = () => {
     if (!id || !judgeId) return;
     setSaving(true);
     try {
-      const rows = criteria.map((c) => ({
+      const rows = criteria.map((c) => {
+        const max = c.maxScore ?? 10;
+        const raw = scoreMap[c.id]?.score ?? 0;
+        const safeScore = clamp(raw, 0, max);
+        return {
         judge_id: judgeId,
         project_id: id,
         criteria_id: c.id,
-        score: scoreMap[c.id]?.score ?? 0,
+          score: safeScore,
         comment: scoreMap[c.id]?.comment || null,
-      }));
+        };
+      });
 
       const { error } = await supabase.from("criteria_scores").upsert(rows, {
         onConflict: "judge_id,project_id,criteria_id",
@@ -168,7 +175,7 @@ const Evaluation: React.FC = () => {
           <div className="text-center text-gray-300">No criteria found for this jury type.</div>
         ) : (
           criteria.map((c) => {
-            const max = c.maxScore ?? 10;
+            const max = 10;
             const weight = c.weight ?? 1;
             const draft = scoreMap[c.id] || { score: 0, comment: "" };
             return (
@@ -181,22 +188,36 @@ const Evaluation: React.FC = () => {
                     </div>
                     <span className="text-sm text-[#ff4b4b]">Weight ×{weight}</span>
                   </div>
-                  <div className="flex gap-3 items-center">
-                    <input
-                      type="number"
-                      min={0}
-                      max={max}
-                      step={1}
-                      value={draft.score}
-                      onChange={(e) =>
-                        setScoreMap((prev) => ({
-                          ...prev,
-                          [c.id]: { ...prev[c.id], score: parseInt(e.target.value || "0", 10) },
-                        }))
-                      }
-                      className="w-24 mobai-input h-11 border-[#ff0006]/30"
-                    />
-                    <span className="text-white/50 text-sm">0–{max}</span>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-white/60">Score</span>
+                      <div className="px-3 py-1 rounded-full border border-[#ff0006]/30 bg-[#140b12] text-[#ff4b4b] text-sm font-semibold">
+                        {draft.score}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-white/60 w-5 text-left">0</span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={max}
+                        step={1}
+                        value={draft.score}
+                        onChange={(e) =>
+                          setScoreMap((prev) => ({
+                            ...prev,
+                            [c.id]: { ...prev[c.id], score: clamp(parseInt(e.target.value || "0", 10), 0, max) },
+                          }))
+                        }
+                        className="w-full accent-[#ff4b4b]"
+                      />
+                      <span className="text-xs text-white/60 w-5 text-right">{max}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] text-white/40">
+                      <span>Low</span>
+                      <span>Average</span>
+                      <span>High</span>
+                    </div>
                   </div>
                   <textarea
                     className="w-full mobai-textarea text-sm resize-none h-20 border-[#ff0006]/20"
