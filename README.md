@@ -34,3 +34,4 @@ This project uses **Vite** and relies on client-side environment variables, whic
 Create a file named `.env.local` in the root of your project directory (`/eunoia-jury-portal`) and populate it with your Supabase credentials:
 
 **.env.local**
+......
