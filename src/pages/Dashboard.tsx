@@ -165,8 +165,8 @@ const Dashboard: React.FC = () => {
   const filteredAndSorted = useMemo(() => {
     const filtered = projects.filter((project) => {
       const matchesSearch =
-        project.teamName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.name.toLowerCase().includes(searchQuery.toLowerCase());
+        (project.teamName ?? "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (project.name ?? "").toLowerCase().includes(searchQuery.toLowerCase());
       const status = project.status || "pending";
       const matchesTab = activeTab === "all" ? true : status === activeTab;
       return matchesSearch && matchesTab;
@@ -248,8 +248,8 @@ const Dashboard: React.FC = () => {
                   key={project.id}
                   className={`transition-all duration-300 mobai-card ${isCompleted ? "opacity-75" : "hover:border-white/30"}`}
                 >
-                  <CardContent className="p-6 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex-1 space-y-2">
+                  <CardContent className="p-6 flex flex-col md:flex-row justify-between items-start gap-6">
+                    <div className="flex-1 space-y-3">
                       <div className="flex items-center gap-3">
                         <h3
                           className={`text-xl font-bold ${isCompleted ? "text-white/50 line-through" : "text-white"}`}
@@ -270,15 +270,15 @@ const Dashboard: React.FC = () => {
                         <span className="text-white/80 font-medium">Team Leader:</span>{" "}
                         {project.teamLeader || "Not set"}
                       </p>
-                    </div>
-                    <div>
-                      <Button
-                        variant="gradient"
-                        className={`rounded-xl px-6 ${isCompleted ? "opacity-80" : ""}`}
-                        onClick={() => navigate(`/evaluate/${project.id}`)}
-                      >
-                        {isCompleted ? "Edit Evaluation" : "Evaluate Project"}
-                      </Button>
+                      <div className="pt-2">
+                        <Button
+                          variant="gradient"
+                          className={`rounded-xl px-6 ${isCompleted ? "opacity-80" : ""}`}
+                          onClick={() => navigate(`/evaluate/${project.id}`)}
+                        >
+                          {isCompleted ? "Edit Evaluation" : "Evaluate Project"}
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
