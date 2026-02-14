@@ -13,6 +13,7 @@ export default {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         serif: ['Playfair Display', 'serif'],
+        criteria: ['Poppins', 'system-ui', 'sans-serif'],
       },
       // 👇 This is your custom colors block from the CDN script
       colors: {

@@ -181,12 +181,15 @@ const Evaluation: React.FC = () => {
             return (
               <Card key={c.id} className="mobai-panel mb-6 border-[#ff0006]/20">
                 <CardContent className="p-6 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-xl font-bold text-[#ff4b4b]">{c.name}</h3>
-                      {c.description && <p className="text-xs text-white/50 mt-1">{c.description}</p>}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-criteria text-md md:text-2xl font-semibold text-[#ff4b4b] leading-tight break-words">{c.name}</h3>
+                      {c.description && <p className="text-xs md:text-sm text-white/50 mt-1">{c.description}</p>}
                     </div>
-                    <span className="text-sm text-[#ff4b4b]">Weight ×{weight}</span>
+                    <div className="text-center flex-shrink-0">
+                      <span className="text-2xl md:text-3xl font-bold text-[#ff4b4b] block">{weight}%</span>
+                      <p className="text-xs text-white/40 mt-1">Weight</p>
+                    </div>
                   </div>
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center gap-3">
